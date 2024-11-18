@@ -10,6 +10,7 @@ import logging
 # Отключаем логирование во время тестов для более чистого вывода
 logging.getLogger('uav_control').disabled = True
 
+
 class TestUAVControl:
     def test_init_success(self, mocker):
         # Мокаем mavutil.mavlink_connection и wait_heartbeat
@@ -285,6 +286,30 @@ class TestUAVControl:
 
         with pytest.raises(RuntimeError, match="Failed to go to waypoint: Ошибка отправки миссии"):
             uav.goto(50.0, 50.0, 10.0)
+
+    def test_land_success(self):
+        mock_master = MagicMock()
+        mock_master.mode_mapping.return_value = {'LAND': 9}
+        uav = UAVControl.__new__(UAVControl)
+        uav.master = mock_master
+        uav.wait_command_ack = MagicMock(return_value=True)
+
+        uav.land()
+
+        mock_master.set_mode.assert_called_with(9)
+        uav.wait_command_ack.assert_called_with(mavutil.mavlink.MAV_CMD_NAV_LAND)
+        assert uav.wait_command_ack.call_count == 1
+
+    def test_land_command_ack_failure(self):
+        mock_master = MagicMock()
+        mock_master.mode_mapping.return_value = {'LAND': 9}
+        uav = UAVControl.__new__(UAVControl)
+        uav.master = mock_master
+        uav.wait_command_ack = MagicMock(return_value=False)
+
+        with pytest.raises(RuntimeError, match="Failed to land: Команда посадки не подтверждена"):
+            uav.land()
+
 
 if __name__ == '__main__':
     unittest.main()
