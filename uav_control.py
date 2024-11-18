@@ -223,3 +223,16 @@ class UAVControl:
         except Exception as e:
             logger.error("Ошибка при полёте к точке: %s", e)
             raise RuntimeError(f"Failed to go to waypoint: {e}") from e
+
+    def land(self) -> None:
+        """
+        Команда на посадку БЛА.
+        """
+        try:
+            self.set_mode('LAND')
+            if not self.wait_command_ack(mavutil.mavlink.MAV_CMD_NAV_LAND):
+                raise RuntimeError("Команда посадки не подтверждена")
+            logger.info("БПЛА выполняет посадку")
+        except Exception as e:
+            logger.error("Ошибка при посадке: %s", e)
+            raise RuntimeError(f"Failed to land: {e}") from e
