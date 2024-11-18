@@ -310,6 +310,44 @@ class TestUAVControl:
         with pytest.raises(RuntimeError, match="Failed to land: Команда посадки не подтверждена"):
             uav.land()
 
+    def test_get_telemetry_vfr_hud(self):
+        mock_msg = MagicMock()
+        mock_msg.get_type.return_value = 'VFR_HUD'
+        mock_msg.groundspeed = 15.0
+        mock_msg.airspeed = 16.0
+        mock_msg.heading = 90
+
+        mock_master = MagicMock()
+        mock_master.recv_match.return_value = mock_msg
+
+        uav = UAVControl.__new__(UAVControl)
+        uav.master = mock_master
+
+        telemetry = uav.get_telemetry()
+        assert telemetry == {
+            'groundspeed': 15.0,
+            'airspeed': 16.0,
+            'heading': 90
+        }
+
+    def test_get_telemetry_sys_status(self):
+        mock_msg = MagicMock()
+        mock_msg.get_type.return_value = 'SYS_STATUS'
+        mock_msg.voltage_battery = 11000  # в мВ
+        mock_msg.battery_remaining = 80  # в процентах
+
+        mock_master = MagicMock()
+        mock_master.recv_match.return_value = mock_msg
+
+        uav = UAVControl.__new__(UAVControl)
+        uav.master = mock_master
+
+        telemetry = uav.get_telemetry()
+        assert telemetry == {
+            'battery_voltage': 11.0,
+            'battery_remaining': 80
+        }
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -130,7 +130,9 @@ class UAVControl:
         """
         try:
             msg = self.master.recv_match(
-                type=['GLOBAL_POSITION_INT', 'ATTITUDE'], blocking=True, timeout=5)
+                type=['GLOBAL_POSITION_INT', 'ATTITUDE', 'VFR_HUD', 'SYS_STATUS'],
+                blocking=True,
+                timeout=5)
             if msg:
                 telemetry = {}
                 if msg.get_type() == 'GLOBAL_POSITION_INT':
@@ -148,6 +150,13 @@ class UAVControl:
                     assert -math.pi <= telemetry['roll'] <= math.pi, "Некорректный крен"
                     assert -math.pi / 2 <= telemetry['pitch'] <= math.pi / 2, "Некорректный тангаж"
                     assert -math.pi <= telemetry['yaw'] <= math.pi, "Некорректное рыскание"
+                elif msg.get_type() == 'VFR_HUD':
+                    telemetry['groundspeed'] = msg.groundspeed
+                    telemetry['airspeed'] = msg.airspeed
+                    telemetry['heading'] = msg.heading
+                elif msg.get_type() == 'SYS_STATUS':
+                    telemetry['battery_voltage'] = msg.voltage_battery / 1000  # В вольтах
+                    telemetry['battery_remaining'] = msg.battery_remaining  # В процентах
                 return telemetry
             logger.warning("Телеметрия недоступна")
             return None
